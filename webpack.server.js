@@ -4,7 +4,7 @@ const LoadablePlugin = require('@loadable/webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');//when webpack command is invoked, the unused bundles are automatically deleted
 
 const config = {
-    //tell webpack the about the entry point js file
+    //tell webpack the about the entry point js file 
     entry: "./src/ssr/index-server.js",
 
     //tell webpack where to put the generated bundle
