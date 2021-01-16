@@ -1,0 +1,72 @@
+store.reduxRedirect:{
+    path: string, pageKey: string enum, dynamic: bool, replace: bool, clientRedirect: bool, statusCode: int, state: object
+} = {}
+
+- path: if exists => a redux redirect call was invoked; it can contain query string and #
+- pageKey: one of the PAGE_KEYS enum; if path exists => pageKey is the key of the page corresponding to path
+- dynamic: bool; if true => the redirect was performed through imperative code (i.e. through dispatching reduxRedirect()) and not by returning <Redirect />
+- replace: bool; true => replace, false => push
+- clientRedirect: true => 301 or 302 is returned to browser which issues a redirect; that's the simplest way to redirect as it'll be equivalent to invoking
+   a brand new request; false => a redirect using the router.
+- statusCode: meaningful only if we have a client redirect; it can be 301 or 302 indicating a permanent/temporary redirect.
+- state: we can pass data to the page to which we're redirecting; 
+   if on the server (dynamic or static) => the page to which we're redirecting can get this state using props.staticContext.state
+   else if on the client (dynamic or static) => the page to which we're redirecting can get this state using props.location.state
+
+
+To issue a dynamic redirect, dispatch the following action: 
+
+export const reduxRedirect = (path, pageKey, dynamic=true, replace=true, clientRedirect=false, statusCode=302, state=undefined) => ({
+    type: ACTIONTYPES.REDUX_REDIRECT, 
+    payload:{
+        path, pageKey, dynamic, replace, clientRedirect, statusCode, state
+    }
+});
+
+
+To issue a static redirect, use the below where you MUST a state containing at least the 3 specified props: clientRedirect, pageKey and statusCode and you're
+free to add more props if you want; the 3 props are required by index-server.
+
+<Redirect to={{
+    pathname: "/login",
+    search: "?utm=your+face",
+    state: { clientRedirect: bool, pageKey: , statusCode: , ...otherPropsOfYourChoice }
+  }}
+
+  
+How Redux Redirect Works?
+Suppose you invoke P1:
+ 
+On the server
+  index-server: after P1.pageInit() settles
+     store.reduxRedirect.path exists => a dynamic redirect occured
+        if clientRedirect => return 301/302 to browser and a new brand new request is issued
+        else =>
+                - disposeAllPages() to set Page1.disposed=true
+                - Recursion - if store.reduxRedirect.state => pass it in context so that P2 receives it in props.staticContext.state 
+
+      No dynamic redirect => renderer()
+
+      if context.url => the rendered page returned <Redirect .../> (i.e. static redirect)
+        if clientRedirect => return 301/302 to browser and a new brand new request is issued
+        else =>
+                - disposeAllPages() to set Page1.disposed=true
+                - dispatch(reduxRedirect(context info)) - i.e. translate the <Redirect /> into a dynamic redux redirect
+                - Recursion - if store.reduxRedirect.state => pass it in context so that P2 receives it in props.staticContext.state 
+
+  
+On the client
+  index-client: if store.reduxRedirect.path && this path!=browser _url => change browser url using replace/push based on store.reduxRedirect.replace
+
+  app.js.useEffect(always):
+     if (store.reduxRedirect.path)
+         if(store.reduxRedirect.path != browser_url) => replace/push replace/push based on store.reduxRedirect.replace
+         dispatch(clearReduxRedirect())
+
+
+If you performed redux redirect on the client => 2 options
+   1 - dynamic redirect: reduxRedirect() is dispatched -> app.js re-render -> app.js.useEffect causes a push/replace and the store.reduxRedirect is clearReduxRedirect;
+       P2 gets the state through props.location.state because push/replace was used
+
+   2 - static redirect: P1 renders <Redirect .../> => the normal router redirect flow performs the redirect; our store.ReduxRedirect is NOT involved; state is also
+       retrieved in P2 using props.location.state

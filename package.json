@@ -1,0 +1,53 @@
+{
+  "name": "ssr1",
+  "version": "1.0.0",
+  "description": "Server side rendering project",
+  "scripts": {
+    "dev": "npm-run-all --parallel dev-build-server dev-build-client dev-server",
+    "dev-server": "nodemon --watch build --exec node build/bundle.js",
+    "dev-build-server": "webpack --config webpack.server.js",
+    "dev-build-client": "webpack --config webpack.client.js"
+  },
+  "author": "Leonardo Zeaiter",
+  "license": "ISC",
+  "dependencies": {
+    "@loadable/component": "^5.14.1",
+    "@loadable/server": "^5.14.0",
+    "axios": "^0.21.0",
+    "detect-node": "^2.0.4",
+    "express": "^4.17.1",
+    "express-http-proxy": "^1.6.2",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "react-redux": "^7.2.2",
+    "react-router": "^5.2.0",
+    "react-router-config": "^5.1.1",
+    "react-router-dom": "^5.2.0",
+    "redux": "^4.0.5",
+    "redux-thunk": "^2.3.0",
+    "serialize-javascript": "^5.0.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.12.8",
+    "@babel/core": "^7.12.9",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/polyfill": "^7.12.1",
+    "@babel/preset-env": "^7.12.7",
+    "@babel/preset-react": "^7.12.7",
+    "@babel/preset-stage-0": "^7.8.3",
+    "@loadable/babel-plugin": "^5.13.2",
+    "@loadable/webpack-plugin": "^5.14.0",
+    "babel-loader": "^8.2.2",
+    "clean-webpack-plugin": "^3.0.0",
+    "css-loader": "^5.0.1",
+    "nodemon": "^2.0.6",
+    "npm-run-all": "^4.1.5",
+    "sass": "^1.32.2",
+    "sass-loader": "^10.1.0",
+    "style-loader": "^2.0.0",
+    "webpack": "^5.9.0",
+    "webpack-cli": "^4.2.0",
+    "webpack-dev-server": "^3.11.0",
+    "webpack-node-externals": "^2.5.2"
+  }
+}

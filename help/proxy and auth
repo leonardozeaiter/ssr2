@@ -1,0 +1,28 @@
+We know that authentication needs to rely on cookies; the reason is that we need an automatic mechanism to provide our identification info.
+If we rely on just JWT, then suppose we're logged and we issue a request to /secure1 page; if the code runs on the server, ow can we pass the JWT to the server?
+We need a mechanism that, whenever we issue a request to the server, sends our id; this mechanism is the cookie; whenever we access a resource /web1 and that /web1 returns a cookie, the browser
+automatically stores this cookie and whenever we request /web1, the browser automatically sends that cookie to /web1.
+
+We have our web api server and let's refer to it as /webapi; when we invoke the login api, it'll be invoked as a result to clicking a button => from the client not the server.
+That login api will return a cookie if authentication succeeds and that cookie will be coupled, by the browser with /webapi. Note that coupling is strict with the domain so if you try to access access
+a subdomain of the same domain, the browser does NOT send the cookie.
+
+We need to achieve 2 goals once we are logged: 
+1 - If api is called directly from client, we need to the cookie to be sent to /webapi
+2 - If api is called from server, such as from a pageInit() running on the server, we also need the cookie to be sent so that the server knows who we are.
+
+If we make a direct call from client browser to /webapi => later on when we invoke a page from the server, the cookie will NOT be sent to the server because the rendering server runs on /web1
+and the cookie was issues from /webapi => the browser won't send it.
+To solve this, we use the following strategy:
+
+a - Every call made from the client to an api will NOT be issued to /webapi but to /web1 on which we'll configure a proxy to proxy the request to /web1.
+    So when user clicks login, the api is first invoked on /web1 which proxies the request to /webapi; if authenticated, the cookie is returned to /web1 which returns it to the client.
+    Now the browser knows that the cookie belongs to /web1 not webapi.
+
+b - When later we access a page on /web1 and pageInit() calls an api, our axios code will reade the cookies received on /web1 (and the auth cookie will be be received) and forwards it to
+    /webapi. 
+
+c - If the client code tries to access a secure api, the request as described in a is sent to /web1 with the auth cookie; the proxy forwards the call to /webapi; we need no additional config
+to order the proxy to add the cookies; this is automatically done.
+
+Everything will work as expected.

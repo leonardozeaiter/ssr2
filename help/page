@@ -1,0 +1,48 @@
+A page component is a root component with respect to routing. Any route leads to <App /> and inside it, we nest the different routes of the application. 
+This way, we guaratee that no matter which route we are in, <App /> will always be rendered.
+
+Every page has a key defined in the PAGES_KEYS enum. 
+
+A page route, existing in Routes[] looks like:
+{
+    path: "/cars", exact: true, component: LazyCars, pageInit: "carspage"
+}
+
+LazyCars is a component that is loaded only if the current route is = path using @loadable/components
+
+import loadable from '@loadable/component';
+
+const LazyCars = loadable(props => import("../pages/carspage"));
+
+pageInit is the name of the file containing a method whose name must be pageInit(req, store); it's optional for a page to have pageInit() but we use it as a 
+convetion that every page has pageInit() that, at least, sets disposed=false.
+
+Every page has an entry in the store containing an object; the props of the object will be props of the page component. We choose to include:
+{ 
+    pageKey: PAGES_KEYS...,
+    
+    disposed: true,
+
+    loading: false, loaded: false, error: null, data: null
+}
+
+disposed is used for the following purpose: suppose you're in P1 and you invoke an api to loads some data, then you move to another page P2 before the call 
+to the api has resolved; when it resolves, the success handler runs and updates the store corresponding to P1 (for example setting: loaded=true and data=...)
+This leaves our store in an invalid state because if we now open P1, it'll be displayed with this loaded data whereas what is true is to show it new.
+To resolve this problem, we assign a boolean prop named disposed with every page whose value is true; when pageInit() runs, it starts by setting disposed=false;
+when the component unmounts (useEffect( return ..., [])), we return a call to dispatch that resets disposed to true; when any api invoked by P1 resolves, it dispose
+dupdate the store only if disposed=false.
+
+Our system integrates well with this concept on the server; if P1.pageInit() starts on the server, P1.disposed is set to false; if a dynamic or static redirect
+occurs on the server, the code in index-server handles this by calling disposeAllPages() before redirecting to the new page which always keeps disposed correct.
+When redirection occurs on the client (ex. we're in P1 and we redirect to P2 no matter whether dynamically or statically), P1 is unmounted => the useEffect() code
+described above will dispatch setting disposed=true of P1.
+
+loading, loaded, error and data are used for multiple purposes; for example, if page init requires loading some data from an api, the page init action sets
+loading=true, loaded=false, error=null and data=null and then invokes the api; the success/failure set those values accordinlgy; for example, if the api call
+fails and we want to show the error inside the page itself, we can make use of error prop; however, if when the api fails we want to redirect to another page 
+(maybe a global error page), then the error prop won't be used in this case.
+If the page performs many tasks (ex. loading, saving, deleting) but one task at a time, we can benefit from those 4 props to handle the currently running task 
+but if different tasks can be performed at the same time or for example you want to show a text describing the current task (ex. LOADING or DELETING etc.), then
+you'll need to add additional props (ex. deleting, deleted, saving, saved).
+

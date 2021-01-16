@@ -1,0 +1,19 @@
+$color1 : red;
+
+@mixin setColor($color, $pd){
+    //param can be named $color1 which overrides global var
+    color: $color;
+    padding: $pd;
+} 
+
+.home-page{
+    background-color: red;
+
+    @include setColor(orange, 50px);
+}
+
+div{
+    & > h2{
+        color: yellow;
+    }
+}

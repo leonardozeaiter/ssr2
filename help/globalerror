@@ -1,0 +1,31 @@
+We can generate a global error either imperatively (dynamic) or declaratively (static)
+store.globalError: {
+    code: int, title: message, message: string, refreshUrl: string, replace: bool
+}
+
+actions
+export const createGlobalError = (code, title, message, refreshUrl, replace=true) => ({type: ACTIONTYPES.GLOBAL_ERROR_CREATE, payload: {code, title, message, refreshUrl, replace}});
+export const clearGlobalError = () => ({type: ACTIONTYPES.GLOBAL_ERROR_CLEAR});
+
+The redux redirect reducer acts when a createGlobalError() is dispatched and sets store.reduxRedirect with a dynamic, non-client redirect to /error; state is ignored
+so we might just be interested to set the replace to decide if replace or push.
+
+Option#1: dynamic global error
+When your code dispatches createGlobalError(), it sets store.globalError and, as explained above, a redux redirect is automatically dispatched; this enables 
+redirection to /error no matter whether your imperative code ran on the server or on the client; the redux redirect mechanism will redirect the user to /error
+which displays the globalerrorpage which reads from store.globalError and in its useEffect(,[]) clears the global error in store.
+
+Option#2: static global error
+The <GlobalError code title message refreshUrl replace .../> works as follows: inside its render(), if props.staticContext => it sets props.staticContext.globalError to the props
+passed to it and in its useEffect(, []) which only runs on the client, dispatches createGlobalError(). In all cases, render() returns null.
+
+On the server
+server.renderer() returns <GlobalError code title message refreshUrl replace .../>; this component renders null; it just, inside it's render(), sets 
+context.staticContext.globalError to an object containing the props that you passed. When index-server runs next, it tests context.globalError and if exists does the below:
+  - dispatch destroyAllPages()
+  - dispatch createGlobalError(), which as we know, updates the redux redirect to point to /error so that when the page renders later on the client to move to /error
+  - Recursion to /error 
+
+On the client
+Almost same logic, if the component being rendered on the client renders <GlobalError .../>; as previously described, props.staticContext will NOT exist but the useEffect(, []) will
+run because we're on the client and it'll dispatch createGlobalError() which also causes a dynamic non-client redirect to /error achieving the effect that we want.
